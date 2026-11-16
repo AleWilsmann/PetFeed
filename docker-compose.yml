@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: comedouro-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: comedouro
+      POSTGRES_PASSWORD: comedouro123
+      POSTGRES_DB: comedouro
+    ports:
+      - "5433:5432"
+    volumes:
+      - dados_pg:/var/lib/postgresql/data
+
+volumes:
+  dados_pg:

@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StatusDosagem {
+  OK
+  FALHOU
+  PARADO
+}
+
+model Usuario {
+  id         String      @id @default(cuid())
+  nome       String
+  email      String      @unique
+  senhaHash  String
+  criadoEm   DateTime    @default(now())
+  racoes     Racao[]
+  comedouros Comedouro[]
+  animais    Animal[]
+}
+
+model Racao {
+  id           String   @id @default(cuid())
+  usuarioId    String
+  nome         String
+  densidadeGml Float    // densidade em g/mL
+  fatorAjuste  Float    @default(1.0)
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  animais      Animal[]
+}
+
+model Comedouro {
+  id            String      @id @default(cuid())
+  usuarioId     String
+  nome          String
+  vazaoMlPorS   Float       // quanto o mecanismo libera por segundo
+  tempoMaximoS  Int         @default(15)
+  token         String      @unique @default(uuid())
+  usuario       Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  animais       Animal[]
+  historico     Historico[]
+}
+
+model Animal {
+  id           String     @id @default(cuid())
+  usuarioId    String
+  nome         String
+  racaoId      String
+  comedouroId  String?
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  racao        Racao      @relation(fields: [racaoId], references: [id])
+  comedouro    Comedouro? @relation(fields: [comedouroId], references: [id])
+  horarios     Horario[]
+}
+
+model Horario {
+  id         String      @id @default(cuid())
+  animalId   String
+  hora       String      // formato "HH:MM"
+  porcaoG    Float
+  diasSemana Int[]       // 0 = domingo ... 6 = sábado
+  ativo      Boolean     @default(true)
+  animal     Animal      @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  historico  Historico[]
+}
+
+model Historico {
+  id          String         @id @default(cuid())
+  horarioId   String?
+  comedouroId String
+  previstoEm  DateTime
+  iniciadoEm  DateTime?
+  duracaoMs   Int?
+  status      StatusDosagem
+  horario     Horario?       @relation(fields: [horarioId], references: [id], onDelete: SetNull)
+  comedouro   Comedouro      @relation(fields: [comedouroId], references: [id], onDelete: Cascade)
+}
