@@ -11,6 +11,13 @@ const registroSchema = z.object({
   status: z.enum(["OK", "FALHOU", "PARADO"]),
 });
 
+function timestampEmSegundos(timestamp: number) {
+  // Aceita timestamps antigos em segundos e os atuais em milissegundos.
+  return timestamp >= 100000000000
+    ? Math.floor(timestamp / 1000)
+    : timestamp;
+}
+
 export async function POST(request: Request) {
   const comedouro = await autenticarDispositivo(request);
   if (!comedouro) {
@@ -30,6 +37,8 @@ export async function POST(request: Request) {
   }
 
   const { horarioId, previstoEm, iniciadoEm, duracaoMs, status } = dados.data;
+  const previstoEmSegundos = timestampEmSegundos(previstoEm);
+  const iniciadoEmSegundos = iniciadoEm ? timestampEmSegundos(iniciadoEm) : null;
 
   // O horário precisa pertencer a um animal deste comedouro
   const horario = await prisma.horario.findFirst({
@@ -43,8 +52,8 @@ export async function POST(request: Request) {
     data: {
       horarioId: horario.id,
       comedouroId: comedouro.id,
-      previstoEm: new Date(previstoEm * 1000),
-      iniciadoEm: iniciadoEm ? new Date(iniciadoEm * 1000) : null,
+      previstoEm: new Date(previstoEmSegundos * 1000),
+      iniciadoEm: iniciadoEmSegundos ? new Date(iniciadoEmSegundos * 1000) : null,
       duracaoMs: duracaoMs ?? null,
       status,
     },

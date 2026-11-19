@@ -380,6 +380,23 @@ select:focus-visible {
   background: #edf0ee;
 }
 
+.status-pill-success {
+  color: #176b4d;
+  background: #dff3e7;
+}
+
+.status-pill-danger {
+  color: #9b3d31;
+  background: #fde3dc;
+}
+
+.schedule-statuses {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: 6px;
+}
+
 .schedule-manage-link {
   display: grid;
   width: 36px;

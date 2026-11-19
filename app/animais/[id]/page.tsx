@@ -6,6 +6,8 @@ import { calcularTempo } from "@/lib/calculo";
 import { alternarHorario, excluirHorario } from "@/app/actions/horarios";
 import FormHorario from "./form-horario";
 import { AppShell } from "@/app/_components/app-shell";
+import StatusRefeicao from "@/app/_components/status-refeicao";
+import { statusHoje } from "@/lib/status-horario";
 
 export const instant = false;
 
@@ -33,7 +35,16 @@ export default async function AnimalPage({
     include: {
       racao: true,
       comedouro: true,
-      horarios: { orderBy: { hora: "asc" } },
+      horarios: {
+        orderBy: { hora: "asc" },
+        include: {
+          historico: {
+            orderBy: { previstoEm: "desc" },
+            take: 20,
+            select: { previstoEm: true, status: true },
+          },
+        },
+      },
     },
   });
   if (!animal) notFound();
@@ -68,6 +79,7 @@ export default async function AnimalPage({
         ) : (
           <ul className="stack card-list">
             {animal.horarios.map((horario) => {
+              const status = statusHoje(horario.historico, horario.hora);
               const calculo = animal.comedouro
                 ? calcularTempo({
                     porcaoG: horario.porcaoG,
@@ -98,6 +110,11 @@ export default async function AnimalPage({
                       </span>
                     )}
                   </span>
+                  <StatusRefeicao
+                    horarioId={horario.id}
+                    texto={status.texto}
+                    classe={status.classe}
+                  />
                   <div className="schedule-actions">
                     <form action={alternarHorario}>
                       <input type="hidden" name="id" value={horario.id} />

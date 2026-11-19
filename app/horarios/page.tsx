@@ -3,6 +3,8 @@ import { AppShell } from "@/app/_components/app-shell";
 import { Icon } from "@/app/_components/icons";
 import { exigirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { statusHoje } from "@/lib/status-horario";
+import StatusRefeicao from "@/app/_components/status-refeicao";
 
 export const instant = false;
 
@@ -20,7 +22,16 @@ export default async function HorariosPage() {
     where: { usuarioId: usuario.id },
     include: {
       comedouro: { select: { nome: true } },
-      horarios: { orderBy: { hora: "asc" } },
+      horarios: {
+        orderBy: { hora: "asc" },
+        include: {
+          historico: {
+            orderBy: { previstoEm: "desc" },
+            take: 20,
+            select: { previstoEm: true, status: true },
+          },
+        },
+      },
     },
     orderBy: { nome: "asc" },
   });
@@ -52,7 +63,9 @@ export default async function HorariosPage() {
         <section className="surface-card">
           <h2 className="section-title">Programação cadastrada</h2>
           <ul className="stack card-list">
-            {horarios.map(({ animal, horario }) => (
+            {horarios.map(({ animal, horario }) => {
+              const status = statusHoje(horario.historico, horario.hora);
+              return (
               <li className={`meal-row${horario.ativo ? "" : " is-disabled"}`} key={horario.id}>
                 <span className="meal-time">{horario.hora}</span>
                 <span className="row-copy">
@@ -60,9 +73,16 @@ export default async function HorariosPage() {
                   <span>{nomeDosDias(horario.diasSemana)}</span>
                   <span>{animal.comedouro?.nome ?? "Sem comedouro vinculado"}</span>
                 </span>
-                <span className={`status-pill${horario.ativo ? "" : " status-pill-muted"}`}>
-                  {horario.ativo ? "Ativo" : "Inativo"}
-                </span>
+                <div className="schedule-statuses">
+                  <span className={`status-pill${horario.ativo ? "" : " status-pill-muted"}`}>
+                    {horario.ativo ? "Ativo" : "Inativo"}
+                  </span>
+                  <StatusRefeicao
+                    horarioId={horario.id}
+                    texto={status.texto}
+                    classe={status.classe}
+                  />
+                </div>
                 <Link
                   aria-label={`Gerenciar horários de ${animal.nome}`}
                   className="schedule-manage-link"
@@ -71,7 +91,8 @@ export default async function HorariosPage() {
                   <Icon name="arrow" />
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </section>
       )}

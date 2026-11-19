@@ -3,6 +3,8 @@ import { AppShell } from "@/app/_components/app-shell";
 import { Icon } from "@/app/_components/icons";
 import { exigirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { statusHoje } from "@/lib/status-horario";
+import StatusRefeicao from "@/app/_components/status-refeicao";
 
 export const instant = false;
 
@@ -48,7 +50,17 @@ export default async function PainelPage() {
       where: { usuarioId: usuario.id },
       include: {
         comedouro: { select: { nome: true } },
-        horarios: { where: { ativo: true }, orderBy: { hora: "asc" } },
+        horarios: {
+          where: { ativo: true },
+          orderBy: { hora: "asc" },
+          include: {
+            historico: {
+              orderBy: { previstoEm: "desc" },
+              take: 20,
+              select: { previstoEm: true, status: true },
+            },
+          },
+        },
       },
       orderBy: { nome: "asc" },
     }),
@@ -146,7 +158,9 @@ export default async function PainelPage() {
             </div>
           ) : (
             <div className="stack">
-              {refeicoesHoje.map(({ animal, horario }) => (
+              {refeicoesHoje.map(({ animal, horario }) => {
+                const status = statusHoje(horario.historico, horario.hora);
+                return (
                 <Link
                   className="meal-row"
                   href={`/animais/${animal.id}`}
@@ -158,9 +172,14 @@ export default async function PainelPage() {
                     <strong>{animal.nome} · {horario.porcaoG} g</strong>
                     <span>{animal.comedouro?.nome ?? "Sem comedouro vinculado"}</span>
                   </span>
-                  <span className="status-pill">Ativa</span>
+                  <StatusRefeicao
+                    horarioId={horario.id}
+                    texto={status.texto}
+                    classe={status.classe}
+                  />
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
